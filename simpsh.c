@@ -1,6 +1,7 @@
 // simpsh.c
 
 #include <unistd.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -12,6 +13,9 @@ int main(int argc, char** argv)
     int fileIndex = 0;
     int FILE_CAPACITY = 10;
 
+    //Verbose??
+    bool verbose = false;
+
     int* files;
 
     files = malloc(FILE_CAPACITY * sizeof(int));
@@ -20,6 +24,7 @@ int main(int argc, char** argv)
     {
         if (strcmp(argv[i], "--rdonly") == 0)
         {
+	  
             if (argc - 1 < i + 1)
             {
                 printf("Error: Missing file\n");
@@ -33,7 +38,13 @@ int main(int argc, char** argv)
                 exit(1);
             }
 
-            if (fileIndex == FILE_CAPACITY)
+            if( verbose )
+	    {
+	      //print command
+	      printf("Print command here?? Or maybe before error checking...");
+	    }
+	    
+	    if (fileIndex == FILE_CAPACITY)
             {
                 FILE_CAPACITY = FILE_CAPACITY * 2;
                 files = realloc(files, FILE_CAPACITY * sizeof(int));
@@ -56,7 +67,7 @@ int main(int argc, char** argv)
 
         if (strcmp(argv[i], "--verbose") == 0)
         {
-            
+	  verbose = true;
         }
     }
 
