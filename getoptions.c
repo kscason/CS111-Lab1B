@@ -4,8 +4,12 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <errno.h> //check how else you wanna check reallocs lol
+<<<<<<< HEAD
 #include  <sys/types.h>
 
+=======
+#include <sys/types.h>
+>>>>>>> 35819bf0c89d4173ad78c1bfd7786501fc12f19a
 
 /* Flag set by ‘--verbose’. */
 static int verbose_flag;
@@ -62,8 +66,9 @@ void openfile( const char *path, int flag )
   fileIndex++;
 }
 
-void runCommand(cmdfds fds, const char* cmd, const char** args)
+void runCommand(cmdfds fds, const char* cmd, char * const * args)
 {
+<<<<<<< HEAD
   int pid = fork();
   if( pid < 0 )
     fprintf( stderr, "Error: Couldn't create a child process!" );
@@ -75,6 +80,28 @@ void runCommand(cmdfds fds, const char* cmd, const char** args)
 	else
 	{
 		printf("Parent thread\n");
+=======
+	pid_t res = fork();
+	
+	if (res == 0)
+	{
+		// Child thread
+		if(execvp(cmd, args) == -1)
+		{
+			printf("Error executing command");
+		}
+
+		exit(1);
+	}
+	else if (res == -1)
+	{
+		printf("Error creating child thread");
+		exit(1);
+	}
+	else
+	{
+		// Parent thread, join with child?
+>>>>>>> 35819bf0c89d4173ad78c1bfd7786501fc12f19a
 	}
 }
 
@@ -157,7 +184,16 @@ int main (int argc, char **argv)
 	    fprintf( stderr, "Error: File descriptors out of range!\n" );
 	    exit(EXIT_FAILURE);
 	  }
+<<<<<<< HEAD
 	  runCommand(stdioe, NULL, NULL);
+=======
+	  
+	  cmdfds fds = { 1, 2, 3};
+	  char * const * args;
+
+
+	  runCommand(fds, , args);
+>>>>>>> 35819bf0c89d4173ad78c1bfd7786501fc12f19a
 
 	  break;
 
