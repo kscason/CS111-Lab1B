@@ -1,9 +1,41 @@
+//#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <fcntl.h>
+#include <errno.h> //check how else you wanna check reallocs lol
 
 /* Flag set by ‘--verbose’. */
 static int verbose_flag;
+static int fileIndex;
+static int* files;
+static int FILE_CAPACITY;
+
+void checkmemory()
+{
+  if( fileIndex == FILE_CAPACITY )
+  {
+    FILE_CAPACITY = FILE_CAPACITY * 2;
+    files = realloc(files, FILE_CAPACITY * sizeof(int));
+  }
+  if( errno == ENOMEM )
+    exit(EXIT_FAILURE);
+}
+
+void openfile( const char *path, int flag )
+{
+  /*Open requested file with correct oflag*/
+  int fd = open(path, flag);
+  if (fd == -1)
+  {
+    /*Return error if failure to open file*/
+    fprintf(stderr, "Error: Failed to open file!\n");
+    exit(EXIT_FAILURE);
+  }
+  printf("File descriptor old: %d && fileIndex: %d\n", fd, fileIndex);
+  files[fileIndex] = fd;
+  fileIndex++;
+}
 
 int
 main (int argc, char **argv)
@@ -11,27 +43,32 @@ main (int argc, char **argv)
   int c;
   verbose_flag = 0;
 
+  /* Set up array of file descriptors */
+  fileIndex = 0;
+  FILE_CAPACITY = 10;
+  files = malloc(FILE_CAPACITY * sizeof(int));
+  checkmemory();
+  
   while (1)
     {
       static struct option long_options[] =
         {
           /* These option sets a flag. */
-          {"verbose", no_argument,       &verbose_flag, 1},
+          {"verbose",    no_argument,       &verbose_flag,   1},
           /* These options don’t set a flag.
              We distinguish them by their indices. */
-          {"add",     no_argument,       0, 'a'},
-          {"append",  no_argument,       0, 'b'},
-          {"rdonly",  required_argument, 0, 'd'},
-          {"wronly",  required_argument, 0, 'c'},
-          {"file",    required_argument, 0, 'f'},
-          {0, 0, 0, 0}
+          {"rdonly",     required_argument, 0,              'r'},
+          {"wronly",     required_argument, 0,              'w'},
+          {"command",    required_argument, 0,              'c'},
+          {0,            0,                 0,               0}
         };
+
       /* getopt_long stores the option index here. */
       int option_index = 0;
-
+      
+      /* Empty string "" since no short options allowed. */
       c = getopt_long (argc, argv, "",
                        long_options, &option_index);
-      //NO SHORT OPTIONS SO EMPTY STRING.
 
       /* Detect the end of the options. */
       if (c == -1)
@@ -39,59 +76,62 @@ main (int argc, char **argv)
 
       switch (c)
         {
-        case 0:
-          /* If this option set a flag, do nothing else now. */
-          if (long_options[option_index].flag != 0)
-            break;
-          printf ("option %s", long_options[option_index].name);
-          if (optarg)
-            printf (" with arg %s", optarg);
-          printf ("\n");
-          break;
+	 case 0:
+          /*This option set a flag, do nothing else now. */
+	  break;
 
-        case 'a':
-          puts ("option -a\n");
-          break;
+        case 'r':
+	  if(verbose_flag)
+	    printf ("--rdonly %s\n", optarg);
+          else
+	    printf("do stuff without verbose (read)\n");
+	  checkmemory();
+	  openfile(optarg, O_RDONLY);
+	  break;
 
-        case 'b':
-          puts ("option -b\n");
-          break;
+        case 'w':
+	  if(verbose_flag)
+	    printf ("--wronly %s\n", optarg);
+          else
+	    printf("do stuff without verbose (write)\n");
+	  checkmemory();
+	  openfile(optarg, O_WRONLY);
+	  break;
 
         case 'c':
-          printf ("option -c with value `%s'\n", optarg);
-          break;
-
-        case 'd':
-          printf ("option -d with value `%s'\n", optarg);
-          break;
-
-        case 'f':
-          printf ("option -f with value `%s'\n", optarg);
-          break;
+	  if( optind+2 > argc )
+	  {
+	    fprintf( stderr, "Error: Missing additional operands!\n" );
+	    exit(EXIT_FAILURE);
+	  }
+	  if(verbose_flag)
+	    printf ("--command %s %s %s %s\n", optarg, argv[optind],
+		    argv[optind+1], argv[optind+2]);
+          else
+	    printf("do stuff without verbose (command)\n");
+	  if( ( optarg || argv[optind] || argv[optind+1] ) >= fileIndex )
+	  {
+	    fprintf( stderr, "Error: File descriptors out of range!\n" );
+	    exit(EXIT_FAILURE);
+	  }
+	  break;
 
         case '?':
           /* getopt_long already printed an error message. */
-          break;
-
         default:
-          abort ();
+          exit(EXIT_FAILURE);
         }
     }
-
-  /* Instead of reporting ‘--verbose’
-     and ‘--brief’ as they are encountered,
-     we report the final status resulting from them. */
-  if (verbose_flag)
-    puts ("verbose flag is set");
-
   /* Print any remaining command line arguments (not options). */
-  if (optind < argc)
+  /*  if (optind < argc)
     {
       printf ("non-option ARGV-elements: ");
       while (optind < argc)
         printf ("%s ", argv[optind++]);
       putchar ('\n');
-    }
-
-  exit (0);
+      }*/
+  for( int i = fileIndex-1; i >= 0; i-- )
+    close(files[i]);
+  free(files);
+  exit (EXIT_SUCCESS);
 }
