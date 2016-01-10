@@ -4,6 +4,8 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <errno.h> //check how else you wanna check reallocs lol
+#include  <sys/types.h>
+
 
 /* Flag set by ‘--verbose’. */
 static int verbose_flag;
@@ -14,7 +16,14 @@ static int* files;
 static int FILE_CAPACITY;
 
 /* Storage for command arguments */
+static char* commandArgs;
 
+/* Storage for I/O/E */
+struct cmdfds{
+  int fd1;
+  int fd2;
+  int fd3;
+};
 
 void checkmemory()
 {
@@ -111,8 +120,10 @@ int main (int argc, char **argv)
 	    printf ("--command %s %s %s %s\n", optarg, argv[optind],
 		    argv[optind+1], argv[optind+2]);
 	  //gather stdin, stdout, sterr
-	  if( ((int)optarg >= fileIndex) || ((int)argv[optind] >= fileIndex) || 
-	      ((int)argv[optind+1] >= fileIndex) )
+	  struct cmdfds stdioe = {atoi(optarg), atoi(argv[optind]),
+				  atoi(argv[optind+1])};
+	  if( (stdioe.fd1 >= fileIndex) || (stdioe.fd2 >= fileIndex) || 
+	      (stdioe.fd3 >= fileIndex) )
 	  {
 	    fprintf( stderr, "Error: File descriptors out of range!\n" );
 	    exit(EXIT_FAILURE);
