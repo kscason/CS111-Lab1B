@@ -18,19 +18,20 @@ static int FILE_CAPACITY;
 /* Storage for command arguments */
 static char* commandArgs;
 
-<<<<<<< HEAD
-/* Storage for I/O/E */
+/*<<<<<<< HEAD
+/* Storage for I/O/E 
 struct cmdfds{
   int fd1;
   int fd2;
   int fd3;
-};
+}; 
 =======
+*/
 typedef struct {
-	int a, b, c;
+	int fd1, fd2, fd3;
 } cmdfds;
 
->>>>>>> c8c7bde80e5d7e88476de1472eabeef227352360
+//>>>>>>> c8c7bde80e5d7e88476de1472eabeef227352360
 
 void checkmemory()
 {
@@ -63,13 +64,17 @@ void openfile( const char *path, int flag )
 
 void runCommand(cmdfds fds, const char* cmd, const char** args)
 {
-	if (fork() == 0)
-	{
-		printf("Child thread");
-	}
+  int pid = fork();
+  if( pid < 0 )
+    fprintf( stderr, "Error: Couldn't create a child process!" );
+  else if (pid == 0)
+  {	
+    printf("Child thread\n");
+    exit(EXIT_SUCCESS);
+  }
 	else
 	{
-		printf("Parent thread");
+		printf("Parent thread\n");
 	}
 }
 
@@ -139,23 +144,20 @@ int main (int argc, char **argv)
 	    printf ("--command %s %s %s %s\n", optarg, argv[optind],
 		    argv[optind+1], argv[optind+2]);
 	  //gather stdin, stdout, sterr
-<<<<<<< HEAD
-	  struct cmdfds stdioe = {atoi(optarg), atoi(argv[optind]),
+	  //<<<<<<< HEAD
+	  cmdfds stdioe = {atoi(optarg), atoi(argv[optind]),
 				  atoi(argv[optind+1])};
 	  if( (stdioe.fd1 >= fileIndex) || (stdioe.fd2 >= fileIndex) || 
 	      (stdioe.fd3 >= fileIndex) )
-=======
+	    /*=======
 	  if( (atoi(optarg) >= fileIndex) || (atoi(argv[optind]) >= fileIndex) || 
 	      (atoi(argv[optind+1]) >= fileIndex) )
 >>>>>>> c8c7bde80e5d7e88476de1472eabeef227352360
-	  {
+	    */{
 	    fprintf( stderr, "Error: File descriptors out of range!\n" );
 	    exit(EXIT_FAILURE);
 	  }
-	  
-	  cmdfds fds = { 1, 2, 3};
-
-	  runCommand(fds, NULL, NULL);
+	  runCommand(stdioe, NULL, NULL);
 
 	  break;
 
