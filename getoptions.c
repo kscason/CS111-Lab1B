@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <errno.h> //check how else you wanna check reallocs lol
+#include <sys/types.h>
 
 /* Flag set by ‘--verbose’. */
 static int verbose_flag;
@@ -49,15 +50,28 @@ void openfile( const char *path, int flag )
   fileIndex++;
 }
 
-void runCommand(cmdfds fds, const char* cmd, const char** args)
+void runCommand(cmdfds fds, const char* cmd, char * const * args)
 {
-	if (fork() == 0)
+	pid_t res = fork();
+	
+	if (res == 0)
 	{
-		printf("Child thread");
+		// Child thread
+		if(execvp(cmd, args) == -1)
+		{
+			printf("Error executing command");
+		}
+
+		exit(1);
+	}
+	else if (res == -1)
+	{
+		printf("Error creating child thread");
+		exit(1);
 	}
 	else
 	{
-		printf("Parent thread");
+		// Parent thread, join with child?
 	}
 }
 
@@ -135,8 +149,10 @@ int main (int argc, char **argv)
 	  }
 	  
 	  cmdfds fds = { 1, 2, 3};
+	  char * const * args;
 
-	  runCommand(fds, NULL, NULL);
+
+	  runCommand(fds, , args);
 
 	  break;
 
