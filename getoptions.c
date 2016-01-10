@@ -1,4 +1,4 @@
-//#include <unistd.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -7,12 +7,20 @@
 
 /* Flag set by ‘--verbose’. */
 static int verbose_flag;
+
+/* Data/storage for file descriptors */
 static int fileIndex;
 static int* files;
 static int FILE_CAPACITY;
 
+/* Storage for command arguments */
+
+
 void checkmemory()
 {
+  /* Check memory of allocated file array, 
+      add more if at FILE_CAPACITY, 
+      exit if allocation error */
   if( fileIndex == FILE_CAPACITY )
   {
     FILE_CAPACITY = FILE_CAPACITY * 2;
@@ -24,11 +32,11 @@ void checkmemory()
 
 void openfile( const char *path, int flag )
 {
-  /*Open requested file with correct oflag*/
+  /* Open requested file with correct OFLAG */
   int fd = open(path, flag);
   if (fd == -1)
   {
-    /*Return error if failure to open file*/
+    /* Return error if failure to open file */
     fprintf(stderr, "Error: Failed to open file!\n");
     exit(EXIT_FAILURE);
   }
@@ -37,8 +45,7 @@ void openfile( const char *path, int flag )
   fileIndex++;
 }
 
-int
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
   int c;
   verbose_flag = 0;
@@ -77,14 +84,12 @@ main (int argc, char **argv)
       switch (c)
         {
 	 case 0:
-          /*This option set a flag, do nothing else now. */
+          /* This option set a flag, do nothing else now. */
 	  break;
 
         case 'r':
 	  if(verbose_flag)
 	    printf ("--rdonly %s\n", optarg);
-          else
-	    printf("do stuff without verbose (read)\n");
 	  checkmemory();
 	  openfile(optarg, O_RDONLY);
 	  break;
@@ -92,8 +97,6 @@ main (int argc, char **argv)
         case 'w':
 	  if(verbose_flag)
 	    printf ("--wronly %s\n", optarg);
-          else
-	    printf("do stuff without verbose (write)\n");
 	  checkmemory();
 	  openfile(optarg, O_WRONLY);
 	  break;
@@ -107,13 +110,14 @@ main (int argc, char **argv)
 	  if(verbose_flag)
 	    printf ("--command %s %s %s %s\n", optarg, argv[optind],
 		    argv[optind+1], argv[optind+2]);
-          else
-	    printf("do stuff without verbose (command)\n");
-	  if( ( optarg || argv[optind] || argv[optind+1] ) >= fileIndex )
+	  //gather stdin, stdout, sterr
+	  if( ((int)optarg >= fileIndex) || ((int)argv[optind] >= fileIndex) || 
+	      ((int)argv[optind+1] >= fileIndex) )
 	  {
 	    fprintf( stderr, "Error: File descriptors out of range!\n" );
 	    exit(EXIT_FAILURE);
 	  }
+	  
 	  break;
 
         case '?':
@@ -130,8 +134,11 @@ main (int argc, char **argv)
         printf ("%s ", argv[optind++]);
       putchar ('\n');
       }*/
+
+  /* Close file descriptors and free allocated memory */
   for( int i = fileIndex-1; i >= 0; i-- )
     close(files[i]);
   free(files);
+
   exit (EXIT_SUCCESS);
 }
