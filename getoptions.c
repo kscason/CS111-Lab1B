@@ -15,6 +15,10 @@ static int FILE_CAPACITY;
 
 /* Storage for command arguments */
 
+typedef struct {
+	int a, b, c;
+} cmdfds;
+
 
 void checkmemory()
 {
@@ -43,6 +47,18 @@ void openfile( const char *path, int flag )
   printf("File descriptor old: %d && fileIndex: %d\n", fd, fileIndex);
   files[fileIndex] = fd;
   fileIndex++;
+}
+
+void runCommand(cmdfds fds, const char* cmd, const char** args)
+{
+	if (fork() == 0)
+	{
+		printf("Child thread");
+	}
+	else
+	{
+		printf("Parent thread");
+	}
 }
 
 int main (int argc, char **argv)
@@ -111,13 +127,17 @@ int main (int argc, char **argv)
 	    printf ("--command %s %s %s %s\n", optarg, argv[optind],
 		    argv[optind+1], argv[optind+2]);
 	  //gather stdin, stdout, sterr
-	  if( ((int)optarg >= fileIndex) || ((int)argv[optind] >= fileIndex) || 
-	      ((int)argv[optind+1] >= fileIndex) )
+	  if( (atoi(optarg) >= fileIndex) || (atoi(argv[optind]) >= fileIndex) || 
+	      (atoi(argv[optind+1]) >= fileIndex) )
 	  {
 	    fprintf( stderr, "Error: File descriptors out of range!\n" );
 	    exit(EXIT_FAILURE);
 	  }
 	  
+	  cmdfds fds = { 1, 2, 3};
+
+	  runCommand(fds, NULL, NULL);
+
 	  break;
 
         case '?':
