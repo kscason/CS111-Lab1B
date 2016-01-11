@@ -1,82 +1,199 @@
 // simpsh.c
 
 #include <unistd.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
+#include <getopt.h>
 #include <fcntl.h>
+#include <errno.h>
+#include  <sys/types.h>
 
-int main(int argc, char** argv)
+/* Flag set by ‘--verbose’. */
+static int verbose_flag;
+
+/* Data/storage for file descriptors */
+static int fileIndex;
+static int* files;
+static int FILE_CAPACITY;
+
+/* Storage for command arguments */
+static char* commandArgs;
+
+typedef struct {
+    int fd1, fd2, fd3;
+} cmdfds;
+
+void checkmemory()
 {
-    int i;
-    int fileIndex = 0;
-    int FILE_CAPACITY = 10;
+  /* Check memory of allocated file array, 
+      add more if at FILE_CAPACITY, 
+      exit if allocation error */
+  if( fileIndex == FILE_CAPACITY )
+  {
+    FILE_CAPACITY = FILE_CAPACITY * 2;
+    files = realloc(files, FILE_CAPACITY * sizeof(int));
+  }
+  if( errno == ENOMEM )
+    exit(EXIT_FAILURE);
+}
 
-    //Verbose??
-    bool verbose = false;
+void openfile( const char *path, int flag )
+{
+  /* Open requested file with correct OFLAG */
+  int fd = open(path, flag);
+  if (fd == -1)
+  {
+    /* Return error if failure to open file */
+    fprintf(stderr, "Error: Failed to open file!\n");
+    exit(EXIT_FAILURE);
+  }
+  printf("File descriptor old: %d && fileIndex: %d\n", fd, fileIndex);
+  files[fileIndex] = fd;
+  fileIndex++;
+}
 
-    int* files;
-
-    files = malloc(FILE_CAPACITY * sizeof(int));
-
-    for (i = 1; i < argc; i++)
+void runCommand(cmdfds fds, const char* cmd, char * const * args)
+{
+  int pid = fork();
+  if( pid < 0 )
+    fprintf( stderr, "Error: Couldn't create a child process!" );
+  else if (pid == 0)
+  { 
+    printf("Child thread\n");
+    exit(EXIT_SUCCESS);
+  }
+    else
     {
-        if (strcmp(argv[i], "--rdonly") == 0)
+        printf("Parent thread\n");
+    pid_t res = fork();
+    
+    if (res == 0)
+    {
+        // Child thread
+        if(execvp(cmd, args) == -1)
         {
-	  
-            if (argc - 1 < i + 1)
-            {
-                printf("Error: Missing file\n");
-                exit(1);
-            }
-
-            int fd = open(argv[i+1], O_RDONLY);
-            if (fd == -1)
-            {
-                printf("Failed to open file\n");
-                exit(1);
-            }
-
-            if( verbose )
-	    {
-	      //print command
-	      printf("Print command here?? Or maybe before error checking...");
-	    }
-	    
-	    if (fileIndex == FILE_CAPACITY)
-            {
-                FILE_CAPACITY = FILE_CAPACITY * 2;
-                files = realloc(files, FILE_CAPACITY * sizeof(int));
-                // check maybe
-            }
-
-            files[fileIndex] = fd;
-            fileIndex++;
+            printf("Error executing command");
         }
 
-        if (strcmp(argv[i], "--wronly") == 0)
-        {
-            
-        }
+        exit(1);
+    }
+    else if (res == -1)
+    {
+        printf("Error creating child thread");
+        exit(1);
+    }
+    else
+    {
+        // Parent thread, join with child?
+    }
+}
 
-        if (strcmp(argv[i], "--command") == 0)
-        {
-            
-        }
+int main (int argc, char **argv)
+{
+  int c;
+  verbose_flag = 0;
 
-        if (strcmp(argv[i], "--verbose") == 0)
+  /* Set up array of file descriptors */
+  fileIndex = 0;
+  FILE_CAPACITY = 10;
+  files = malloc(FILE_CAPACITY * sizeof(int));
+  checkmemory();
+  
+  while (1)
+    {
+      static struct option long_options[] =
         {
-	  verbose = true;
+          /* These option sets a flag. */
+          {"verbose",    no_argument,       &verbose_flag,   1},
+          /* These options don’t set a flag.
+             We distinguish them by their indices. */
+          {"rdonly",     required_argument, 0,              'r'},
+          {"wronly",     required_argument, 0,              'w'},
+          {"command",    required_argument, 0,              'c'},
+          {0,            0,                 0,               0}
+        };
+
+      /* getopt_long stores the option index here. */
+      int option_index = 0;
+      
+      /* Empty string "" since no short options allowed. */
+      c = getopt_long (argc, argv, "",
+                       long_options, &option_index);
+
+      /* Detect the end of the options. */
+      if (c == -1)
+        break;
+
+      switch (c)
+        {
+     case 0:
+          /* This option set a flag, do nothing else now. */
+      break;
+
+        case 'r':
+      if(verbose_flag)
+        printf ("--rdonly %s\n", optarg);
+      checkmemory();
+      openfile(optarg, O_RDONLY);
+      break;
+
+        case 'w':
+      if(verbose_flag)
+        printf ("--wronly %s\n", optarg);
+      checkmemory();
+      openfile(optarg, O_WRONLY);
+      break;
+
+        case 'c':
+      if( optind+2 > argc )
+      {
+        fprintf( stderr, "Error: Missing additional operands!\n" );
+        exit(EXIT_FAILURE);
+      }
+      if(verbose_flag)
+        printf ("--command %s %s %s %s\n", optarg, argv[optind],
+            argv[optind+1], argv[optind+2]);
+      //gather stdin, stdout, sterr
+      cmdfds stdioe = {atoi(optarg), atoi(argv[optind]),
+                  atoi(argv[optind+1])};
+      if( (stdioe.fd1 >= fileIndex) || (stdioe.fd2 >= fileIndex) || 
+          (stdioe.fd3 >= fileIndex) )
+        /*
+      if( (atoi(optarg) >= fileIndex) || (atoi(argv[optind]) >= fileIndex) || 
+          (atoi(argv[optind+1]) >= fileIndex) )
+        */{
+        fprintf( stderr, "Error: File descriptors out of range!\n" );
+        exit(EXIT_FAILURE);
+      }
+      runCommand(stdioe, NULL, NULL);
+      
+      cmdfds fds = { 1, 2, 3};
+      char * const * args;
+
+
+      runCommand(fds, , args);
+
+      break;
+
+        case '?':
+          /* getopt_long already printed an error message. */
+        default:
+          exit(EXIT_FAILURE);
         }
     }
-
-
-    // close all the ish
-    for (i = 0; i < FILE_CAPACITY; i++)
+  /* Print any remaining command line arguments (not options). */
+  /*  if (optind < argc)
     {
-        
-    }
+      printf ("non-option ARGV-elements: ");
+      while (optind < argc)
+        printf ("%s ", argv[optind++]);
+      putchar ('\n');
+      }*/
 
-    return 0;
+  /* Close file descriptors and free allocated memory */
+  for( int i = fileIndex-1; i >= 0; i-- )
+    close(files[i]);
+  free(files);
+
+  exit (EXIT_SUCCESS);
 }
