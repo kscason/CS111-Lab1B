@@ -4,7 +4,7 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <errno.h>
-#include  <sys/types.h>
+#include <sys/types.h>
 
 /* Flag set by ‘--verbose’. */
 static int verbose_flag;
@@ -204,7 +204,7 @@ int main (int argc, char **argv)
         break;
 
       case 'c':
-        //HOW MUCH SHOULD I PRINT ON VERBOSE IF THERE ARE ERRORS?
+
         if( optind+2 > argc )
         {
           fprintf( stderr, "Error: Missing additional operands!\n" );
@@ -212,10 +212,14 @@ int main (int argc, char **argv)
           break;
         }
 
-        //NEED TO CHECK HERE IF FIRST 3 OPERANDS ARE DIGITS
-        //IF NOT SET return_value = 1,
-        //PRINT ERROR,
-        //SKIP THE COMMAND WITH A BREAK
+        if (argv[optind - 1][0] < '0' || argv[optind - 1][0] > '9' ||
+            argv[optind][0] < '0' || argv[optind][0] > '9' ||
+            argv[optind + 1][0] < '0' || argv[optind + 1][0] > '9')
+        {
+          fprintf( stderr, "Error: First 3 arguments to --command are not digits!\n" );
+          return_value = 1;
+          break;
+        }
 
     /* Gather file descriptors for i o e, assuming integers */
     cmdfds stdioe = {atoi(optarg), atoi(argv[optind]),
