@@ -150,6 +150,7 @@ int main (int argc, char **argv)
 
       case 'r':
         /* Check for missing file operand */
+
         if(missingfile(optarg))
         {
           optind--;

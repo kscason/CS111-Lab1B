@@ -3,3 +3,22 @@ CS111 Lab 1
 Adam Jones 904-443-264
 Kaitlyn Cason 204-411-394
 
+All implementation is contained "simpsh.c".
+Tested in lxsrv07.
+
+Implementation for --rdonly, --wronly, --verbose, and --command.
+Returns 0 if all options work, 1 if one fails.
+If one option fails, will skip and continue with other options.
+
+If verbose is called twice, it will print out "--verbose" for the second one.
+If verbose flag it set and missing a rd-/wr-only file, then it will print
+the error first before the option name.
+
+Note that since we haven't implemented the --wait option yet, the parent 
+process does not wait for the child process to complete.
+So sometimes, the parent process finishes before the child process gets to 
+actually execute the command. 
+This does not result in a return error.
+This will be fixed by implementing --wait, which is not part of Lab 1A.
+
+The example given has --wait at the end, which guarantees that all 3 will run.
