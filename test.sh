@@ -1,50 +1,23 @@
 #!/bin/bash
 
-function should_fail() {
-  result=$?;
+touch a
+touch b
+touch c
 
-  echo -n "==> $1 ";
+./simpsh --rdonly fakeFile | grep "Error: Failed to open file!" > /dev/null
 
-  if [ $result -lt 1 ]; then
-    echo "FAILURE";
-    exit 1;
-  else
-    echo;
-  fi
-}
 
-function should_succeed() {
-  result=$?;
+#./simpsh --rdonly Makefile | grep "Error: Failed to open file!" > /dev/null
+#should_fail "does not report file that exists"
 
-  echo -n "==> $1 ";
+#./simpsh --command 0 1 2 ls | grep "Error" > /dev/null
+#should_succeed "using a non existent file descriptor should report the error"
 
-  if [ $result -gt 0 ]; then
-    echo "FAILURE";
-    exit 1;
-  else
-    echo;
-  fi
-}
+rm a
+rm b
+rm c
 
 if [ 1 -eq 0 ]; then
-
-tmp_file=/tmp/foo
-tmp_file2=/tmp/foo2
-> "$tmp_file"
-> "$tmp_file2"
-
-
-./simpsh --rdonly cantpossiblyexist 2>&1 | grep "No such file" > /dev/null
-should_succeed "reports missing file";
-
-
-./simpsh --rdonly Makefile | grep "No such file" > /dev/null;
-should_fail "does not report file that exists"
-
-
-./simpsh --verbose --command 1 2 3 echo foo 2>&1 | grep "Bad file descriptor" > /dev/null
-should_succeed "using a non existent file descriptor should report the error"
-
 
 > "$tmp_file"
 (./simpsh \
@@ -164,7 +137,5 @@ tail -1 "$tmp_file" | grep "VERBOSE: --wronly $tmp_file"  "$tmp_file" > /dev/nul
 should_succeed "should find wronly after command (order of options)"
 
 # TODO: test with larger number file descriptors
-
-echo "Success"
 
 fi

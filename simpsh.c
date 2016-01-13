@@ -76,7 +76,6 @@ void runCommand(cmdfds fds, char *args[])
 {
   /* Runs the command as specificied by --command */
 
-  //NOTE: REMOVE saved_IN/OUT/ERR later because you just keep the in out err everytime...
   pid_t pid = fork();
   
   if( pid < 0 )
@@ -86,36 +85,16 @@ void runCommand(cmdfds fds, char *args[])
     /* Child thread to run the bash command */
 
     /* Change standard input, output, error to user specifications */
-
-    //DELETED THE SAVED VALUES ONCE TESTING DONE
-    saved_IN = dup(0);
-    saved_OUT = dup(1);
-    saved_ERR = dup(2);
     dup2( files[fds.fd1], 0 );
     dup2( files[fds.fd2], 1 );
     dup2( files[fds.fd3], 2 );
 
     /* By convention, args[0] is the cmd name, args must end with a null ptr */
-    dprintf(saved_ERR, "Running child thread for argument: %s\n", args[0]); 
     if(execvp(args[0], args) == -1)
     {
-      dprintf( saved_ERR, "Error: Unable to execute command! Exiting in failure.\n");
+      fprintf( stderr, "Error: Unable to execute command! Exiting in failure.\n");
       exit(EXIT_FAILURE);
     }
-  }
-    else
-    {
-      /* Parent thread to continue onward. */
-
-      //DELETE THESE LATER WHEN YOURE DONE TESTING
-      //THIS PRINTS ALL ERROR STUFF TO OUR ACTUAL ERROR SPOT
-      //BUT YOU DONT NEED TO RETURN TO ORIGINAL I/O/E
-      dup2( saved_IN, 0 );
-      dup2( saved_OUT, 1 );
-      dup2( saved_ERR, 2 );
-      close( saved_IN );
-      close( saved_OUT );
-      close( saved_ERR );
   }
 }
 
@@ -124,6 +103,8 @@ int main (int argc, char **argv)
   int c;
   verbose_flag = 0;
   return_value = 0;
+
+  int firstVerbose = 1;
 
   /* Set up array of file descriptors */
   fileIndex = 0;
@@ -162,6 +143,9 @@ int main (int argc, char **argv)
         {
       case 0:
         /* This option set a flag, do nothing else now. */
+      	if (!firstVerbose)
+      		printf("--verbose\n");
+      	firstVerbose = 0;
         break;
 
       case 'r':
@@ -249,6 +233,8 @@ int main (int argc, char **argv)
         /* Reallocate memory */
         CMD_CAPACITY *= 2;
         args = (char**)realloc(args, CMD_CAPACITY * sizeof(char*));
+		if( errno == ENOMEM )
+    		exit(EXIT_FAILURE);
       }
       args[argsCounter] = argv[index];
       argsCounter++;
