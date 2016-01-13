@@ -165,9 +165,6 @@ int main (int argc, char **argv)
         break;
 
       case 'r':
-        //DOES VERBOSE NEED TO PRINT IF THERE IS A MISSING FILE? 
-        //OR IS AN ERROR THEN MOVING ON ENOUGH?
-
         /* Check for missing file operand */
         if(missingfile(optarg))
         {
@@ -212,7 +209,7 @@ int main (int argc, char **argv)
           break;
         }
 
-        if (argv[optind - 1][0] < '0' || argv[optind - 1][0] > '9' ||
+        if (optarg[0] < '0' || optarg[0] > '9' ||
             argv[optind][0] < '0' || argv[optind][0] > '9' ||
             argv[optind + 1][0] < '0' || argv[optind + 1][0] > '9')
         {
@@ -222,8 +219,8 @@ int main (int argc, char **argv)
         }
 
     /* Gather file descriptors for i o e, assuming integers */
-    cmdfds stdioe = {atoi(optarg), atoi(argv[optind]),
-          atoi(argv[optind+1])};
+    cmdfds stdioe = {atoi(optarg), atoi(argv[optind]), atoi(argv[optind+1])};
+
     if( (stdioe.fd1 >= fileIndex) || (stdioe.fd2 >= fileIndex) || 
         (stdioe.fd3 >= fileIndex) )
     {
@@ -249,7 +246,7 @@ int main (int argc, char **argv)
       }
       if( argsCounter == CMD_CAPACITY )
       {
-        /* Reallocate memory, check me on this. */
+        /* Reallocate memory */
         CMD_CAPACITY *= 2;
         args = (char**)realloc(args, CMD_CAPACITY * sizeof(char*));
       }
@@ -261,8 +258,7 @@ int main (int argc, char **argv)
     /* If verbose flag is set */
     if(verbose_flag)
     {
-      printf ("--command %d %d %d ", stdioe.fd1, stdioe.fd2,
-          stdioe.fd3);
+      printf ("--command %d %d %d ", stdioe.fd1, stdioe.fd2, stdioe.fd3);
       for( int j = 0; j < argsCounter; j++ )
         printf ("%s ", args[j] );
       printf("\n");

@@ -7,6 +7,8 @@ simpsh.o: simpsh.c
 clean:
 	rm simpsh simpsh.o
 
-check:
+check: simpsh
+	./test.sh
 
-dist:
+dist: check
+	
